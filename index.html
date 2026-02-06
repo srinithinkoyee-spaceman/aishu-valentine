@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Aishu</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-1: #0b0f1a;
+      --bg-2: #2a0a24;
+      --accent: #ff5c8a;
+      --gold: #ffd166;
+      --mint: #8fffd7;
+      --text: #f7f4ff;
+      --panel: rgba(10, 12, 20, 0.7);
+      --border: rgba(255, 255, 255, 0.14);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 80% -10%, rgba(255,92,138,0.25), transparent 60%),
+                  radial-gradient(900px 700px at 10% 110%, rgba(143,255,215,0.20), transparent 60%),
+                  linear-gradient(160deg, var(--bg-1), var(--bg-2));
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+
+    canvas#fireworks {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 72px;
+      gap: 20px;
+    }
+
+    .hero {
+      text-align: center;
+      max-width: 980px;
+      padding: 26px;
+      border-radius: 22px;
+      background: var(--panel);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(6px);
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-family: "Playfair Display", serif;
+      font-weight: 700;
+      font-size: clamp(2.6rem, 7vw, 4.8rem);
+      letter-spacing: 0.02em;
+    }
+
+    .hero p {
+      margin: 0;
+      font-size: clamp(1rem, 2.4vw, 1.3rem);
+      color: rgba(247, 244, 255, 0.85);
+    }
+
+    .section {
+      width: min(980px, 100%);
+      background: var(--panel);
+      border-radius: 22px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .section h2 {
+      margin: 0 0 8px;
+      font-family: "Playfair Display", serif;
+      font-size: clamp(1.6rem, 3vw, 2.3rem);
+    }
+
+    .section p {
+      margin: 0 0 12px;
+      color: rgba(247, 244, 255, 0.85);
+    }
+
+    .puzzle-wrap {
+      display: grid;
+      gap: 14px;
+      justify-items: center;
+      text-align: center;
+    }
+
+    .puzzle-grid {
+      width: min(340px, 88vw);
+      aspect-ratio: 9 / 16;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      margin-top: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 1px;
+      border-radius: 12px;
+    }
+
+    .tile {
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background-size: 300% 300%;
+      background-repeat: no-repeat;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .tile:active { transform: scale(0.98); }
+
+    .tile.empty {
+      background: rgba(255, 255, 255, 0.06);
+      border-style: dashed;
+      cursor: default;
+    }
+
+    .tile.locked { cursor: default; }
+
+    .puzzle-meta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .timer {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      font-weight: 600;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    button.action {
+      background: linear-gradient(120deg, #ff5c8a, #ff8f5c);
+      border: none;
+      color: #1b0c13;
+      font-weight: 700;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      box-shadow: 0 12px 25px rgba(255, 92, 138, 0.3);
+    }
+
+    button.ghost {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: none;
+    }
+
+    .timeout {
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .hidden { display: none; }
+
+    .question {
+      text-align: center;
+      display: grid;
+      gap: 10px;
+    }
+
+    .heart {
+      font-size: 2.2rem;
+      color: var(--accent);
+      animation: pulse 1.6s infinite;
+    }
+
+    .answer {
+      font-weight: 600;
+      color: var(--mint);
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .card {
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 92, 138, 0.2);
+      border: 1px solid rgba(255, 92, 138, 0.35);
+      font-size: 0.85rem;
+    }
+
+    .footer {
+      font-size: 0.85rem;
+      opacity: 0.8;
+      text-align: center;
+      margin-top: 18px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="fireworks"></canvas>
+
+  <main class="page">
+    <section class="hero">
+      <h1>Hey Aishu <span class="crown" aria-hidden="true">👑</span></h1>
+      <p>You light up my universe like fireworks on the perfect night.</p>
+    </section>
+
+    <section class="section">
+      <h2>Just For You</h2>
+      <p>Aishu, if beauty were a puzzle, I’d happily spend forever putting the pieces together.</p>
+      <p>Solve this memory puzzle and I’ll ask you a sweet question right after.</p>
+      <p>It’s a two-minute challenge using our memories. Take your time, and if you need more time, just ask for it.</p>
+
+      <div class="puzzle-wrap">
+        <div class="puzzle-meta">
+          <span class="timer" id="timer">02:00</span>
+          <span id="puzzle-label">Memory Photo 1</span>
+        </div>
+        <div class="puzzle-grid" id="puzzle"></div>
+        <div class="button-row">
+          <button class="action" id="shuffle">Shuffle</button>
+          <button class="action ghost" id="switch-photo">Switch Photo</button>
+        </div>
+        <div class="timeout hidden" id="timeout">
+          <div>Time’s up. Want more time to solve it?</div>
+          <div class="button-row">
+            <button class="action" id="more-time">Add 2 Minutes</button>
+            <button class="action ghost" id="solve">Solve It For Me</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section hidden" id="question">
+      <div class="question">
+        <div class="heart">❤</div>
+        <h2>My Question</h2>
+        <p>Aishu, you amaze me in a hundred ways. Your creativity, your ambition, your clarity, and the calm you bring to my world.</p>
+        <p>Will you be my Valentine?</p>
+        <div class="button-row">
+          <button class="action" id="yes">Yes</button>
+          <button class="action ghost" id="no">Not yet</button>
+        </div>
+        <div class="answer hidden" id="answer"></div>
+      </div>
+    </section>
+
+    <section class="section hidden" id="info">
+      <h2>Only For You</h2>
+      <p>Here are the little details I’ve collected and loved about you.</p>
+      <div class="cards">
+        <article class="card">
+          <h3>Our Story Highlights</h3>
+          <p>Met: Nov 23 (Kanni).</p>
+          <p>First sight: Jan 9 at It’s 455, 14th St NW, Atlanta, GA — you wore all black and blew my mind.</p>
+        </article>
+        <article class="card">
+          <h3>Dreams & Ambitions</h3>
+          <p>First wanted to be a marine biologist, then an archaeologist, then a genetic engineer.</p>
+          <p>Ambitions that make me proud.</p>
+        </article>
+        <article class="card">
+          <h3>Favorite Bites</h3>
+          <div class="pill-list">
+            <span class="pill">Jack fruit</span>
+            <span class="pill">Acchu muruku</span>
+            <span class="pill">Pal payasam</span>
+            <span class="pill">Aviyal</span>
+            <span class="pill">Fried chicken</span>
+            <span class="pill">Yippi noodles</span>
+            <span class="pill">Indomi noodles</span>
+            <span class="pill">Broccoli</span>
+            <span class="pill">Idly</span>
+            <span class="pill">Green Lays</span>
+            <span class="pill">Red Dubai Lays</span>
+            <span class="pill">Maska chaska</span>
+          </div>
+        </article>
+        <article class="card">
+          <h3>Things You Love</h3>
+          <div class="pill-list">
+            <span class="pill">Puzzles</span>
+            <span class="pill">Lego</span>
+            <span class="pill">Painting</span>
+            <span class="pill">Artwork</span>
+            <span class="pill">Item songs</span>
+            <span class="pill">En chella peruapple</span>
+            <span class="pill">Dole dole</span>
+          </div>
+        </article>
+        <article class="card">
+          <h3>Beauty & Style</h3>
+          <p>Makeup: liquid lipstick, kajal love.</p>
+          <p>Scents: vanilla perfume and floral notes.</p>
+          <p>Clothes size: M or S. Shoe size: 26.5 cm (41 / 9.5 / 9).</p>
+        </article>
+        <article class="card">
+          <h3>Breakfast In Bed</h3>
+          <p>Coffee, idly vada, pongal sambar, muffin.</p>
+          <p>No papaya allowed — message received.</p>
+        </article>
+        <article class="card">
+          <h3>Places & Moments</h3>
+          <p>Rasam at your place.</p>
+          <p>At temple pouring water.</p>
+          <p>Go karting.</p>
+          <p>Photos at Canopy by Hilton Atlanta, room 1402.</p>
+        </article>
+        <article class="card">
+          <h3>Dream Visits</h3>
+          <p>AR Rahman, BTS, Disney World, concerts together.</p>
+        </article>
+        <article class="card">
+          <h3>Future Home</h3>
+          <p>Fireplace, bookshelf, mirror above the bed.</p>
+          <p>Red and black kitchen interiors.</p>
+        </article>
+      </div>
+    </section>
+
+    <div class="footer">Made with fireworks and all the little details I love about you.</div>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("fireworks");
+    const ctx = canvas.getContext("2d");
+    let w, h;
+
+    function resize() {
+      w = canvas.width = window.innerWidth * devicePixelRatio;
+      h = canvas.height = window.innerHeight * devicePixelRatio;
+      canvas.style.width = window.innerWidth + "px";
+      canvas.style.height = window.innerHeight + "px";
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    const bursts = [];
+
+    function firework() {
+      const x = Math.random() * window.innerWidth;
+      const y = Math.random() * window.innerHeight * 0.5;
+      const particles = [];
+      const colors = ["#ff5c8a", "#ffd166", "#8fffd7", "#9b7bff", "#ff9a3c"];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const count = 28 + Math.floor(Math.random() * 14);
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i) / count;
+        const speed = 1 + Math.random() * 2.5;
+        particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 60 + Math.random() * 20,
+          color
+        });
+      }
+      bursts.push({ particles });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      bursts.forEach((burst, bi) => {
+        burst.particles.forEach((p, pi) => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.02;
+          p.life -= 1;
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = Math.max(p.life / 80, 0);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+          ctx.fill();
+          if (p.life <= 0) burst.particles.splice(pi, 1);
+        });
+        if (burst.particles.length === 0) bursts.splice(bi, 1);
+      });
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(draw);
+    }
+
+    setInterval(firework, 900);
+    draw();
+
+    const puzzleEl = document.getElementById("puzzle");
+    const timerEl = document.getElementById("timer");
+    const timeoutEl = document.getElementById("timeout");
+    const shuffleBtn = document.getElementById("shuffle");
+    const switchBtn = document.getElementById("switch-photo");
+    const moreTimeBtn = document.getElementById("more-time");
+    const solveBtn = document.getElementById("solve");
+    const questionSection = document.getElementById("question");
+    const infoSection = document.getElementById("info");
+    const yesBtn = document.getElementById("yes");
+    const noBtn = document.getElementById("no");
+    const answerEl = document.getElementById("answer");
+    const puzzleLabel = document.getElementById("puzzle-label");
+
+    const puzzleImages = ["assets/IMG_1487.JPG", "assets/IMG_1504.JPG"];
+    let currentImageIndex = 0;
+    let tiles = [];
+    let timerId;
+    let timeLeft = 120;
+    let locked = false;
+
+    function formatTime(seconds) {
+      const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const secs = String(seconds % 60).padStart(2, "0");
+      return `${mins}:${secs}`;
+    }
+
+    function startTimer() {
+      clearInterval(timerId);
+      timeLeft = 120;
+      timerEl.textContent = formatTime(timeLeft);
+      timerId = setInterval(() => {
+        if (locked) return;
+        timeLeft -= 1;
+        timerEl.textContent = formatTime(timeLeft);
+        if (timeLeft <= 0) {
+          clearInterval(timerId);
+          timeoutEl.classList.remove("hidden");
+          locked = true;
+        }
+      }, 1000);
+    }
+
+    function addTime() {
+      locked = false;
+      timeoutEl.classList.add("hidden");
+      timeLeft = 120;
+      timerEl.textContent = formatTime(timeLeft);
+      startTimer();
+    }
+
+    function isAdjacent(a, b) {
+      const rowA = Math.floor(a / 3);
+      const colA = a % 3;
+      const rowB = Math.floor(b / 3);
+      const colB = b % 3;
+      return Math.abs(rowA - rowB) + Math.abs(colA - colB) === 1;
+    }
+
+    function isSolvable(arr) {
+      const flat = arr.filter((n) => n !== 8);
+      let inversions = 0;
+      for (let i = 0; i < flat.length; i++) {
+        for (let j = i + 1; j < flat.length; j++) {
+          if (flat[i] > flat[j]) inversions++;
+        }
+      }
+      return inversions % 2 === 0;
+    }
+
+    function shuffleTiles() {
+      let arr = Array.from({ length: 9 }, (_, i) => i);
+      do {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+      } while (!isSolvable(arr) || isSolved(arr));
+      tiles = arr;
+    }
+
+    function isSolved(arr) {
+      return arr.every((val, index) => val === index);
+    }
+
+    function renderPuzzle() {
+      puzzleEl.innerHTML = "";
+      tiles.forEach((tile, index) => {
+        const button = document.createElement("button");
+        button.className = "tile";
+        if (tile === 8) {
+          button.classList.add("empty");
+          button.disabled = true;
+        } else {
+          const row = Math.floor(tile / 3);
+          const col = tile % 3;
+          button.style.backgroundImage = `url('${puzzleImages[currentImageIndex]}')`;
+          button.style.backgroundPosition = `${col * 50}% ${row * 50}%`;
+          button.addEventListener("click", () => moveTile(index));
+        }
+        if (locked) button.classList.add("locked");
+        puzzleEl.appendChild(button);
+      });
+    }
+
+    function moveTile(index) {
+      if (locked) return;
+      const emptyIndex = tiles.indexOf(8);
+      if (!isAdjacent(index, emptyIndex)) return;
+      [tiles[index], tiles[emptyIndex]] = [tiles[emptyIndex], tiles[index]];
+      renderPuzzle();
+      if (isSolved(tiles)) {
+        clearInterval(timerId);
+        revealQuestion();
+      }
+    }
+
+    function revealQuestion() {
+      locked = true;
+      timeoutEl.classList.add("hidden");
+      questionSection.classList.remove("hidden");
+      questionSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function solvePuzzle() {
+      tiles = Array.from({ length: 9 }, (_, i) => i);
+      renderPuzzle();
+      clearInterval(timerId);
+      revealQuestion();
+    }
+
+    function resetPuzzle() {
+      locked = false;
+      timeoutEl.classList.add("hidden");
+      shuffleTiles();
+      renderPuzzle();
+      startTimer();
+    }
+
+    shuffleBtn.addEventListener("click", resetPuzzle);
+    switchBtn.addEventListener("click", () => {
+      currentImageIndex = (currentImageIndex + 1) % puzzleImages.length;
+      puzzleLabel.textContent = `Memory Photo ${currentImageIndex + 1}`;
+      renderPuzzle();
+    });
+    moreTimeBtn.addEventListener("click", addTime);
+    solveBtn.addEventListener("click", solvePuzzle);
+
+    yesBtn.addEventListener("click", () => {
+      answerEl.textContent = "You just made my whole world sparkle. Thank you, Aishu.";
+      answerEl.classList.remove("hidden");
+      infoSection.classList.remove("hidden");
+      infoSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    noBtn.addEventListener("click", () => {
+      answerEl.textContent = "Take your time. I’m still right here, smiling.";
+      answerEl.classList.remove("hidden");
+    });
+
+    resetPuzzle();
+  </script>
+</body>
+</html>
