@@ -250,9 +250,81 @@
       text-align: center;
       margin-top: 18px;
     }
+
+    .audio-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 8, 12, 0.85);
+      display: grid;
+      place-items: center;
+      z-index: 10;
+      backdrop-filter: blur(6px);
+    }
+
+    .audio-overlay.hidden {
+      display: none;
+    }
+
+    .envelope {
+      text-align: center;
+      background: transparent;
+      padding: 0;
+      border-radius: 18px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      max-width: 320px;
+      position: relative;
+    }
+
+    .envelope-top {
+      width: 0;
+      height: 0;
+      border-left: 160px solid transparent;
+      border-right: 160px solid transparent;
+      border-bottom: 90px solid rgba(255, 255, 255, 0.12);
+      margin: 0 auto;
+    }
+
+    .envelope-body {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 22px 24px 18px;
+      border-radius: 0 0 18px 18px;
+      margin-top: -6px;
+    }
+
+    .audio-title {
+      font-family: "Playfair Display", serif;
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+    }
+
+    .audio-sub {
+      color: rgba(247, 244, 255, 0.8);
+      font-size: 0.95rem;
+      margin-bottom: 14px;
+    }
+
+    .rose {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
   </style>
 </head>
 <body>
+  <div id="audio-overlay" class="audio-overlay">
+    <div class="envelope">
+      <div class="envelope-top"></div>
+      <div class="envelope-body">
+        <div class="rose" aria-hidden="true">🌹</div>
+        <div class="audio-title">Just For You</div>
+        <div class="audio-sub">Turn up the volume for this part.</div>
+        <div class="audio-sub">Aishu, if beauty were a puzzle, I’d happily spend forever putting the pieces together.</div>
+        <div class="audio-sub">Solve this memory puzzle and I’ll ask you a sweet question right after.</div>
+        <div class="audio-sub">It’s a two-minute challenge using our memories. Take your time, and if you need more time, just ask for it.</div>
+        <button id="start-music" class="action">Open</button>
+      </div>
+    </div>
+  </div>
   <audio id="bg-music" autoplay loop preload="auto">
     <source src="assets/jessies-land.mp3" type="audio/mpeg">
   </audio>
@@ -264,7 +336,7 @@
       <p>You light up my universe like fireworks on the perfect night.</p>
     </section>
 
-    <section class="section">
+    <section class="section hidden" id="puzzle-section">
       <h2>Just For You</h2>
       <p>Aishu, if beauty were a puzzle, I’d happily spend forever putting the pieces together.</p>
       <p>Solve this memory puzzle and I’ll ask you a sweet question right after.</p>
@@ -385,6 +457,20 @@
     const ctx = canvas.getContext("2d");
     let w, h;
 
+    const audio = document.getElementById("bg-music");
+    const audioOverlay = document.getElementById("audio-overlay");
+    const startMusicBtn = document.getElementById("start-music");
+    const puzzleSection = document.getElementById("puzzle-section");
+
+    function startMusic() {
+      audio.play().catch(() => {});
+      audioOverlay.classList.add("hidden");
+      puzzleSection.classList.remove("hidden");
+    }
+
+    startMusicBtn.addEventListener("click", startMusic);
+    audioOverlay.addEventListener("click", startMusic);
+
     function resize() {
       w = canvas.width = window.innerWidth * devicePixelRatio;
       h = canvas.height = window.innerHeight * devicePixelRatio;
@@ -466,7 +552,7 @@
 
     function formatTime(seconds) {
       const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
-      const secs = String(seconds % 60).padStart(2, "0");
+      const secs = String(seconds % 60)).padStart(2, "0");
       return `${mins}:${secs}`;
     }
 
